@@ -41,9 +41,43 @@
   </head>
   <body id="index">
     <h2> Muehehehe </h2>
+
+    <table id="userTable">
+      <thead>
+        <tr>
+          <th>Deadline</th>
+          <th>Taskname</th>
+        </tr>
+      </thead>
+      <tbody id="userData">
+      </tbody>
+    </table>
+    
+    <script>
+      const userRef = database.ref('task'); 
+    
+      function displayUserData(data) {
+        const userData = document.getElementById('userData');
+        userData.innerHTML = ''; 
+    
+        data.forEach((item) => {
+          const { deadline, taskName} = item.val(); 
+          const row = `<tr><td>${deadline}</td><td>${taskName}</td></tr>`;
+          userData.innerHTML += row;
+        });
+      }
+    
+      userRef.once('value', (snapshot) => {
+        const userData = snapshot.val();
+        if (userData) {
+          const userDataArray = Object.values(userData);
+          displayUserData(userDataArray);
+        }
+      });
+    </script>
+    
     <button id="btn-addTask"  > Tambah task</button>
     <button id="btn-logout">Log out</button>
-  
     
   </body>
   <script></script>
