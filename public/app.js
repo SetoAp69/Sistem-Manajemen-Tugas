@@ -11,10 +11,30 @@ const firebaseConfig = {
     databaseURL:"https://manajemen-tugas-65563-default-rtdb.asia-southeast1.firebasedatabase.app/",
     apiKey: "AIzaSyDjHUl4Bdc_37BxICfsCrTqbIIJFBeMFKM",
 };
-const app = initializeApp(firebaseConfig);
 
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
 
-
+firebase.auth().onAuthStateChanged(function(user) {
+    if (user) {
+      const userId = user.uid;
+  
+      const tasksRef = database.ref('task');
+  
+      tasksRef.where('userId', '==', userId).get()
+        .then((querySnapshot) => {
+          const tasksData = [];
+          querySnapshot.forEach((doc) => {
+            tasksData.push(doc.data());
+          });
+  
+          displayTasksInTable(tasksData);
+        })
+        .catch((error) => {
+          console.error("Error getting tasks: ", error);
+        });
+    }
+  });
 
 if(document.getElementById('index')){
     const auth=getAuth()
@@ -54,6 +74,22 @@ function emailAndPassLogin(email1,password1){
         const errorMessage=error.message;
     });
 }
+
+function displayTasksInTable(tasksData) {
+    const tableBody = document.getElementById('taskTableBody');
+  
+    tableBody.innerHTML = '';
+  
+    tasksData.forEach((task) => {
+      const row = tableBody.insertRow();
+  
+      const deadlineCell = row.insertCell(0);
+      deadlineCell.textContent = task.deadline;
+  
+      const taskNameCell = row.insertCell(1);
+      taskNameCell.textContent = task.taskName;
+    });
+}   
 
 // document.addEventListener("DOMContentLoaded", event=>{
 //     const app =firebase.app();
