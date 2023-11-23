@@ -1,0 +1,4 @@
+1. Lanjut benerin login
+2. Buat index (kosong)
+3. Fitur tambah data (task)
+4. Update index (tampilkan task)

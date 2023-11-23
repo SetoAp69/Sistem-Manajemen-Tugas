@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Login Form</title>
+  <script defer type="module" src="app.js"> </script>
+  <script>
+    import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/9.1.3/firebase-auth.js";
+    const auth = getAuth();
+    signOut(auth).then(()=>{
+        window.location.href('login.html')
+    }).catch((error)=>{
+        console.log(error.message)
+    });
+  </script>
+</head>
+<body>
+  <h2>Login Form</h2>
+  
+  <!-- Email and password login form -->
+  <form id="loginForm">
+    <div>
+      <label for="email">Email:</label>
+      <input type="email" id="email" name="email" required>
+    </div>
+    <div>
+      <label for="password">Password:</label>
+      <input type="password" id="password" name="password" required>
+    </div>
+    <div>
+      <input type="submit" value="Login">
+    </div>
+  </form>
+
+  <!-- Button for login with email -->
+  <button id="loginWithEmailButton">Login with Email</button>
+  <button id="btn-goToRegister"> Register </button>
+
+  <script src="app.js"></script>
+</body>
+</html>
