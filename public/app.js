@@ -1,15 +1,18 @@
 
-import {getDatabase, ref, set} from "https://www.gstatic.com/firebasejs/9.1.3/firebase-database.js";
+import {getDatabase, ref, set,onValue} from "https://www.gstatic.com/firebasejs/9.1.3/firebase-database.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.3/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,browserSessionPersistence,onAuthStateChanged  } from "https://www.gstatic.com/firebasejs/9.1.3/firebase-auth.js";
 
-
+import { signInWithPopup, signInWithRedirect,getRedirectResult, GoogleAuthProvider ,getAuth, createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,browserSessionPersistence,onAuthStateChanged  } from "https://www.gstatic.com/firebasejs/9.1.3/firebase-auth.js";
+// import * as firebase from'firebase/app';
+// import 'firebase/auth'
 
 
 
 const firebaseConfig = {
-    databaseURL:"https://manajemen-tugas-65563-default-rtdb.asia-southeast1.firebasedatabase.app/",
-    apiKey: "AIzaSyDjHUl4Bdc_37BxICfsCrTqbIIJFBeMFKM",
+    databaseURL:"https://manajemen-tugas-kuliah-f0645-default-rtdb.asia-southeast1.firebasedatabase.app/",
+    apiKey: "AIzaSyDnp3-c04_Hto4YImjdLl_pnZBQ_r-btRM",
+    appId: "1:208839786645:web:cb184f000ad012ebfd5b9c",
+    authDomain: "manajemen-tugas-kuliah-f0645.firebaseapp.com",
 };
 const app = initializeApp(firebaseConfig);
 
@@ -22,6 +25,7 @@ if(document.getElementById('index')){
     onAuthStateChanged(auth,function(user){
         if(user){
             console.log(user.uid);
+            getTask()
         }else{
             console.log('not logged in yet');
             window.location.href='login.html';
@@ -32,7 +36,7 @@ if(document.getElementById('index')){
 function logOut(){
     const auth = getAuth();
     signOut(auth).then(()=>{
-        window.location.href('login.html')
+        window.location.href='login.html'
     }).catch((error)=>{
         console.log(error.message)
     });
@@ -62,22 +66,133 @@ function emailAndPassLogin(email1,password1){
 
 export function checkAuth(){
     const auth=getAuth();
-    console.log(auth);
+    
+    
     if(!auth){
-        window.location.href('login.html')
+        window.location.href='login.html'
+       
+    }else{
     }
 }
 
-function loginWithEmail(){
-    const provider = new firebase.auth.GoogleAuthProvider();
+function getTask(){
+    const auth=getAuth();
+    const user=auth.currentUser;
+    let lateTask=[]
+    let task=[]
+    console.log(user);
+    if(user){
+        console.log('getTask from ',user.uid);
+        const db=getDatabase()
+        const refx=ref(db,'users/'+user.uid+'/task/')
+        
+        onValue(refx, (snapshot)=>{
+            const data=snapshot.val()
+            
+            for(const taskData in data){
+                if(new Date(data[taskData].deadline)<new Date()){
+                    console.log(new Date(data[taskData].deadline)+'  < '+ new Date())
+                    lateTask.push(data[taskData])
+                    
+                }else{
+                    console.log(new Date(data[taskData].deadline)+'  > '+ new Date())
+                    task.push(data[taskData])
+                    
+                    
+                }
+            
+            }
+                const taskTable=createTable(task,'Task');
+                const lateTaskTable=createTable(lateTask,'Late Task');
+                          
+                console.log(task)
+                console.log(lateTask)
+                document.body.appendChild(taskTable)
+                document.body.appendChild(lateTaskTable)
 
-    firebase.auth().signInWithPopup(provider)
-    .then(result=>{
+        })  
+        
+        
+    }else{
+        console.log('user not found')
+    }
+    
+   
+    
+}
+
+function createTable(tableData,tableName){
+    const table=document.createElement('table')
+    table.setAttribute('id','table')
+    const tableBody=document.createElement('tbody')
+    tableBody.setAttribute('id','tbody')
+
+    const tableCaption=document.createElement('caption')
+    tableCaption.textContent=tableName;
+    table.appendChild(tableCaption);
+
+    tableData.forEach(task=>{
+        const row=tableBody.insertRow();
+        row.insertCell().textContent=task.taskName;
+        row.insertCell().textContent=task.deadline;
+        
+        const doneButtonCell = row.insertCell();
+        const doneButton = document.createElement('button');
+        doneButton.textContent = 'Done'; // Change text accordingly
+        doneButton.setAttribute('data-task-id', task.taskId); // Optionally set data attributes
+        doneButtonCell.appendChild(doneButton);
+
+        const editButtonCell = row.insertCell();
+        const editButton = document.createElement('button');
+        editButton.textContent = 'Edit'; // Change text accordingly
+        editButton.setAttribute('data-task-id', task.taskId); // Optionally set data attributes
+        editButtonCell.appendChild(editButton);
+
+    });
+    table.appendChild(tableBody);
+    return table;
+}
+
+function loginWithEmail(){
+    const app=initializeApp(firebaseConfig)
+    const provider = new GoogleAuthProvider();
+    const auth=getAuth();
+
+    signInWithPopup(auth,provider)
+    .then ((result)=>{
+        const credential=GoogleAuthProvider.credentialFromResult(result);
+        const token=credential.accessToken;
         const user=result.user;
-        initUserData(user);
-        console.log(typeof(user.uid));
+        if(user){
+            window.location.href='index.html'
+        }
+    }).catch((error)=>{
+        console.log(error.message);
     })
-    .catch(console.log);
+
+
+    // initializeApp.auth().signInWithPopup(provider)
+    // .then(result=>{
+    //     const user=result.user;
+    //     initUserData(user);
+    //     console.log(typeof(user.uid));
+    // })
+    // .catch(console.log);
+
+    // signInWithRedirect(auth,provider);
+    // getRedirectResult(auth)
+    // .then((result)=>{
+    //     const credential=GoogleAuthProvider.credentialFromResult(result);
+    //     const token=credential.accessToken;
+    //     const user=result.user;
+    //     alert(user.displayName);
+    // }).catch((error)=>{
+    //     console.log(error.message);
+    // })
+
+
+
+
 
 
 }
@@ -160,12 +275,20 @@ if(document.getElementById('btn-logout')){
      })
 }
 
+document.addEventListener("DOMContentLoaded", function() {
+    const taskData = document.getElementById('task-data');
+    if (taskData) {
+        // If the element with ID 'task-data' exists, call getTask function
+        
+    }
+});
+
 
 
 document.addEventListener("DOMContentLoaded", event => {
-    const loginButton = document.getElementById("loginButton");
-    if (loginButton) {
-      loginButton.addEventListener("click", loginWithEmail);
+    const loginWithEmailButton = document.getElementById("loginWithEmailButton");
+    if (loginWithEmailButton) {
+      loginWithEmailButton.addEventListener("click", loginWithEmail);
     }
   });
 
@@ -211,11 +334,11 @@ if(document.getElementById('taskForm')){
          addNewTask(taskId,name,deadline);
 
          console.log('new task');
-         window.location.href('index.html');
+         
     
      })
 }
 
 document.addEventListener("DOMContentLoaded",function(){
-    checkAuth();
+    //checkAuth();
 })
