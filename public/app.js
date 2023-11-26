@@ -1,5 +1,5 @@
 
-import {getDatabase, ref, set,onValue} from "https://www.gstatic.com/firebasejs/9.1.3/firebase-database.js";
+import {getDatabase, ref, set,onValue,update} from "https://www.gstatic.com/firebasejs/9.1.3/firebase-database.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.3/firebase-app.js";
 
 import { signInWithPopup, signInWithRedirect,getRedirectResult, GoogleAuthProvider ,getAuth, createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,browserSessionPersistence,onAuthStateChanged  } from "https://www.gstatic.com/firebasejs/9.1.3/firebase-auth.js";
@@ -19,19 +19,25 @@ const app = initializeApp(firebaseConfig);
 
 
 
+
 if(document.getElementById('index')){
     const auth=getAuth()
 
     onAuthStateChanged(auth,function(user){
         if(user){
             console.log(user.uid);
+            document.getElementById('username').textContent="Hello, \n"+user.displayName
             getTask()
+            
+            
         }else{
             console.log('not logged in yet');
             window.location.href='login.html';
         }
     })
 }
+
+
 
 function logOut(){
     const auth = getAuth();
@@ -64,16 +70,16 @@ function emailAndPassLogin(email1,password1){
 //     console.log(app)
 // });
 
-export function checkAuth(){
-    const auth=getAuth();
+// export function checkAuth(){
+//     const auth=getAuth();
     
     
-    if(!auth){
-        window.location.href='login.html'
+//     if(!auth){
+//         window.location.href='login.html'
        
-    }else{
-    }
-}
+//     }else{
+//     }
+// }
 
 function getTask(){
     const auth=getAuth();
@@ -82,7 +88,7 @@ function getTask(){
     let task=[]
     console.log(user);
     if(user){
-        console.log('getTask from ',user.uid);
+        
         const db=getDatabase()
         const refx=ref(db,'users/'+user.uid+'/task/')
         
@@ -97,7 +103,6 @@ function getTask(){
                 }else{
                     console.log(new Date(data[taskData].deadline)+'  > '+ new Date())
                     task.push(data[taskData])
-                    
                     
                 }
             
@@ -130,7 +135,7 @@ function createTable(tableData,tableName){
     const tableCaption=document.createElement('caption')
     tableCaption.textContent=tableName;
     table.appendChild(tableCaption);
-
+    console.log(tableData);
     tableData.forEach(task=>{
         const row=tableBody.insertRow();
         row.insertCell().textContent=task.taskName;
@@ -139,18 +144,58 @@ function createTable(tableData,tableName){
         const doneButtonCell = row.insertCell();
         const doneButton = document.createElement('button');
         doneButton.textContent = 'Done'; // Change text accordingly
-        doneButton.setAttribute('data-task-id', task.taskId); // Optionally set data attributes
+        doneButton.setAttribute('data-task-id', task.taskId);
+        doneButton.addEventListener('click',function(event){
+            event.preventDefault()
+            try{
+                deleteTask(task.taskId)
+                window.location.href='index.html'
+
+            }catch(error){
+                console.log(error)
+            }
+            
+        }) // Optionally set data attributes
         doneButtonCell.appendChild(doneButton);
 
         const editButtonCell = row.insertCell();
         const editButton = document.createElement('button');
         editButton.textContent = 'Edit'; // Change text accordingly
+        editButton.id='taskEditButton'
+        // editButton.setAttribute('href',`editTask.html?taskID=${task.taskId}`)
+        editButton.addEventListener('click',function(event){
+            event.preventDefault()
+            window.location.href=`editTask.html?taskID=${task.taskId}`
+        })
         editButton.setAttribute('data-task-id', task.taskId); // Optionally set data attributes
         editButtonCell.appendChild(editButton);
 
     });
     table.appendChild(tableBody);
     return table;
+}
+
+function deleteTask(id){
+    const taskId=id
+    const auth=getAuth()
+    const db=getDatabase()
+    onAuthStateChanged(auth,function(user){
+        if(user){
+            
+            const updates={}
+            const postData={
+                taskName:null,
+                deadline:null,
+                note:null,
+                taskId:null,
+            }
+            updates['/users/'+user.uid+'/task/'+taskId]=postData
+            return update(ref(db),updates)
+            
+        }
+       
+    })
+
 }
 
 function loginWithEmail(){
@@ -211,19 +256,31 @@ function initUserData(userId){
     });
 }
 
-function addNewTask(id,name,dl){
-    const taskId=id;
+function generateId(){
+    const timeStamp=new Date().getTime().toString()
+    const taskId='task'+timeStamp
+    return taskId
+}
+
+function addNewTask(name,dl){
+    const taskId=generateId();
     const taskName=name;
     const deadline=dl;
+    // const taskNote =note;
     const auth=getAuth();
     const user=auth.currentUser;
-    const app = initializeApp(firebaseConfig);
+    
     const db=getDatabase();
     if(user){
-        set(ref(db, 'users/'+user.uid+'/task/'+taskId),{
-            taskName : taskName,
-            deadline : deadline,
-        });
+        
+             set(ref(db, 'users/'+user.uid+'/task/'+taskId),{
+                taskId : taskId,
+                taskName : taskName,
+                deadline : deadline,
+                // note : taskNote,
+            });
+        
+       
     }
 
 
@@ -275,6 +332,8 @@ if(document.getElementById('btn-logout')){
      })
 }
 
+
+
 document.addEventListener("DOMContentLoaded", function() {
     const taskData = document.getElementById('task-data');
     if (taskData) {
@@ -302,6 +361,8 @@ document.addEventListener("DOMContentLoaded", event=>{
     }
 })
 
+
+
 document.addEventListener("DOMContentLoaded", event=>{
     const addTaskButton = document.getElementById('btn-goToRegister');
     if(addTaskButton){
@@ -326,19 +387,101 @@ document.addEventListener("DOMContentLoaded", event => {
 if(document.getElementById('taskForm')){
     document.getElementById('taskForm').addEventListener('submit',function(event){
         event.preventDefault();
-         const taskId = document.getElementById('taskId').value;
+         
          const name = document.getElementById('taskName').value;
          const deadline = document.getElementById('deadline').value;
+        // const taskNote=document.getElementById('taskNote').value
 
-    
-         addNewTask(taskId,name,deadline);
+         addNewTask(name,deadline,);
 
-         console.log('new task');
+         
          
     
      })
 }
 
-document.addEventListener("DOMContentLoaded",function(){
-    //checkAuth();
-})
+// document.addEventListener("DOMContentLoaded", function() {
+//     const taskForm = document.getElementById('taskForm');
+//     let index=0;
+//     if (taskForm) {
+//         console.log('task form loaded')
+//         taskForm.addEventListener('submit', function(event) {
+//             event.preventDefault();
+//             const name = document.getElementById('taskName').value;
+//             const deadline = document.getElementById('deadline').value;
+//             const taskNote = document.getElementById('taskNote').value;
+
+//             addNewTask(name, deadline, taskNote);
+            
+//             index++;
+            
+            
+//         })
+        
+//     }
+
+    
+    
+    
+// });
+
+
+
+
+
+   
+
+
+    
+
+ 
+
+document.addEventListener("DOMContentLoaded", function() {
+    const taskEditForm = document.getElementById('taskEditForm');
+    if(taskEditForm){
+        console.log('form loaded')
+        const app=initializeApp(firebaseConfig)
+        const queryString=window.location.search
+        const taskNameForm = document.getElementById('taskName');
+        const deadlineForm = document.getElementById('deadline');
+        const urlParams = new URLSearchParams(queryString);
+        const taskId=urlParams.get('taskID');
+        
+        
+        if(taskId){
+            const auth=getAuth();
+            onAuthStateChanged(auth,function(user){
+                if(user){
+                    console.log(user)
+                    const db=getDatabase()
+                    const refx=ref(db,'users/'+user.uid+'/task/'+taskId)
+                    
+                    onValue(refx, (snapshot)=>{
+                        const data=snapshot.val()
+                        taskNameForm.value=data.taskName;
+                        deadlineForm.value=data.deadline;
+            
+                    })  
+
+                    document.getElementById('editSubmit').addEventListener('click',function(event){
+                        
+                        const updates={};
+                        const postData={
+                            taskName:taskNameForm.value,
+                            deadline:deadlineForm.value,
+                        }
+                        updates['/users/'+user.uid+'/task/'+taskId]=postData
+                        return update(ref(db),updates)
+                    })
+                }else{
+                    console.log('user not found')
+                }
+            })
+
+           
+            
+        }
+    } else {
+        console.log('not loaded')
+    }
+});
