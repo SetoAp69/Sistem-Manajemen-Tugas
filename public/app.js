@@ -527,58 +527,57 @@ if(document.getElementById('taskForm')){
     
 
  
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function () {
     const taskEditForm = document.getElementById('taskEditForm');
-    if(taskEditForm){
+    if (taskEditForm) {
         console.log('form loaded');
-        const app=initializeApp(firebaseConfig);
-        const queryString=window.location.search;
+        const app = initializeApp(firebaseConfig);
+        const queryString = window.location.search;
         const taskNameForm = document.getElementById('taskName');
         const deadlineForm = document.getElementById('deadline');
         const urlParams = new URLSearchParams(queryString);
-        const taskId=urlParams.get('taskID');
+        const taskId = urlParams.get('taskID');
 
-        if(taskId === null){
+        if (taskId === null) {
             getTask();
             window.location.href = 'manajemenTask.html';
         }
-        
-        if(taskId){
-            const auth=getAuth();
-            onAuthStateChanged(auth,function(user){
-                if(user){
+
+        if (taskId) {
+            const auth = getAuth();
+            onAuthStateChanged(auth, function (user) {
+                if (user) {
                     console.log(user);
-                    const db=getDatabase();
-                    const refx=ref(db,'users/'+user.uid+'/task/'+taskId);
-                    
-                    onValue(refx, (snapshot)=>{
-                        const data=snapshot.val();
-                        taskNameForm.value=data.taskName;
-                        deadlineForm.value=data.deadline;
+                    const db = getDatabase();
+                    const refx = ref(db, 'users/' + user.uid + '/task/' + taskId);
+
+                    onValue(refx, (snapshot) => {
+                        const data = snapshot.val();
+                        taskNameForm.value = data.taskName;
+                        deadlineForm.value = data.deadline;
                     });
 
-                    document.getElementById('editSubmit').addEventListener('click',function(event){
-                        const updates={};
-                        const postData={
-                            taskName:taskNameForm.value,
-                            deadline:deadlineForm.value,
+                    document.getElementById('editSubmit').addEventListener('click', function (event) {
+                        const updates = {};
+
+                        const postData = {
+                            taskName: taskNameForm.value,
+                            deadline: deadlineForm.value,
+                            taskId
                         };
-                        backTo()
-                        function backTo(){
-                            console.log("testing")
+
+                        updates['/users/' + user.uid + '/task/' + taskId] = postData;
+
+                        update(ref(db), updates).then(() => {
+                            console.log('Update successful');
+                            // Refresh the table after a successful update
                             getTask();
-                            window.location.href = 'manajemenTask.html';
-                        }
-                        backTo()
-                        updates['/users/'+user.uid+'/task/'+taskId]=postData;
-                        update(ref(db),updates).then(() => {
-                                getTask();
-                                window.location.href = 'manajemenTask.html';
+                            window.location.href = 'manajemenTask.html'; // Redirect after successful update
                         }).catch((error) => {
                             console.log(error.message);
                         });
-                        getTask();
-                        window.location.href = 'manajemenTask.html';
+
+                        event.preventDefault();
                     });
                 } else {
                     console.log('user not found');
