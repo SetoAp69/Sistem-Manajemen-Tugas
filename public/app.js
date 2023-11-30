@@ -18,32 +18,8 @@ const app = initializeApp(firebaseConfig);
 
 const auth = getAuth();
 
-if (document.getElementById('index')) {
-    const auth = getAuth();
 
-    onAuthStateChanged(auth, function (user) {
-        if (user) {
-            // User is authenticated
-            console.log(user.uid);
-            document.getElementById('username').textContent = "Hello, \n" + user.displayName;
-            getTask();
-        } else {
-            // User is not authenticated
-            console.log('not logged in yet');
 
-            // Check the current location
-            const currentLocation = window.location.pathname;
-
-            // If the user tries to access manajemenTask.html, redirect to login.html
-            if (currentLocation.includes('manajemenTask.html')) {
-                window.location.href = 'login.html';
-            } else {
-                // If the user is on any other page, redirect to index.html
-                window.location.href = 'index.html';
-            }
-        }
-    });
-}
 
 document.addEventListener("DOMContentLoaded", function () {
     const userDropdown = document.getElementById('userDropdown');
@@ -51,6 +27,26 @@ document.addEventListener("DOMContentLoaded", function () {
     const registerOption = document.getElementById('registerOption');
     const logoutOption = document.getElementById('logoutOption');
     const auth = getAuth();
+
+    if (window.location.pathname.includes('manajemenTask.html')) {
+        const auth = getAuth();
+    
+        onAuthStateChanged(auth, function (user) {
+            if (user) {
+                // User is authenticated
+                console.log('User is logged in:', user.uid);
+                document.getElementById('username').textContent = "Hello, \n" + user.displayName;
+            } else {
+                // User is not authenticated
+                console.log('User is not logged in yet');
+    
+                // Redirect to login.html if not already on the login page
+                if (window.location.pathname !== '/login.html') {
+                    window.location.href = 'login.html';
+                }
+            }
+        });
+    }
 
     const loginButton = document.getElementById('loginButton');
     if (loginButton) {
@@ -272,27 +268,25 @@ function getTask() {
     return table;
 }
 
-function deleteTask(id){
-    const taskId=id
-    const auth=getAuth()
-    const db=getDatabase()
-    onAuthStateChanged(auth,function(user){
-        if(user){
-            
-            const updates={}
-            const postData={
-                taskName:null,
-                deadline:null,
-                note:null,
-                taskId:null,
-            }
-            updates['/users/'+user.uid+'/task/'+taskId]=postData
-            return update(ref(db),updates)
-            
-        }
-       
-    })
+function deleteTask(id) {
+    const taskId = id;
+    const auth = getAuth();
+    const db = getDatabase();
 
+    onAuthStateChanged(auth, function (user) {
+        if (user) {
+            const updates = {};
+            updates['/users/' + user.uid + '/task/' + taskId] = null;
+
+            update(ref(db), updates).then(() => {
+                // Task successfully deleted
+                console.log('Task deleted successfully');
+                getTask(); // Refresh the table after deletion
+            }).catch((error) => {
+                console.log(error.message);
+            });
+        }
+    });
 }
 
 function loginWithEmail(){
@@ -533,77 +527,67 @@ if(document.getElementById('taskForm')){
     
 
  
-
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", function() {
     const taskEditForm = document.getElementById('taskEditForm');
-
-    if (taskEditForm) {
+    if(taskEditForm){
         console.log('form loaded');
-        const app = initializeApp(firebaseConfig);
-        const queryString = window.location.search;
+        const app=initializeApp(firebaseConfig);
+        const queryString=window.location.search;
         const taskNameForm = document.getElementById('taskName');
         const deadlineForm = document.getElementById('deadline');
         const urlParams = new URLSearchParams(queryString);
-        const taskId = urlParams.get('taskID');
+        const taskId=urlParams.get('taskID');
 
-        let editSubmitButton;
+        if(taskId === null){
+            getTask();
+            window.location.href = 'manajemenTask.html';
+        }
+        
+        if(taskId){
+            const auth=getAuth();
+            onAuthStateChanged(auth,function(user){
+                if(user){
+                    console.log(user);
+                    const db=getDatabase();
+                    const refx=ref(db,'users/'+user.uid+'/task/'+taskId);
+                    
+                    onValue(refx, (snapshot)=>{
+                        const data=snapshot.val();
+                        taskNameForm.value=data.taskName;
+                        deadlineForm.value=data.deadline;
+                    });
 
-        if (taskId) {
-            const auth = getAuth();
-            onAuthStateChanged(auth, function (user) {
-                if (user) {
-                    console.log('user found:', user);
-                    const db = getDatabase();
-                    const refx = ref(db, 'users/' + user.uid + '/task/' + taskId);
-
-                    onValue(refx, (snapshot) => {
-                        const data = snapshot.val();
-                        taskNameForm.value = data.taskName;
-                        deadlineForm.value = data.deadline;
-
-                        console.log('taskId:', taskId);
+                    document.getElementById('editSubmit').addEventListener('click',function(event){
+                        const updates={};
+                        const postData={
+                            taskName:taskNameForm.value,
+                            deadline:deadlineForm.value,
+                        };
+                        backTo()
+                        function backTo(){
+                            console.log("testing")
+                            getTask();
+                            window.location.href = 'manajemenTask.html';
+                        }
+                        backTo()
+                        updates['/users/'+user.uid+'/task/'+taskId]=postData;
+                        update(ref(db),updates).then(() => {
+                                getTask();
+                                window.location.href = 'manajemenTask.html';
+                        }).catch((error) => {
+                            console.log(error.message);
+                        });
+                        getTask();
+                        window.location.href = 'manajemenTask.html';
                     });
                 } else {
                     console.log('user not found');
                 }
             });
-
-            // Define editSubmitButton outside the onAuthStateChanged callback
-            editSubmitButton = document.getElementById('editSubmit');
         } else {
-            console.log('taskId is undefined or null');
-        }
-
-        // Check if editSubmitButton is not null before attaching the event listener
-        if (editSubmitButton) {
-            editSubmitButton.addEventListener('click', function (event) {
-                event.preventDefault();
-
-                const auth = getAuth();
-                const user = auth.currentUser;
-                const db = getDatabase();
-
-                const updates = {};
-                const postData = {
-                    taskName: taskNameForm.value,
-                    deadline: deadlineForm.value,
-                };
-                updates['/users/' + user.uid + '/task/' + taskId] = postData;
-
-                console.log('Updating taskId:', taskId);
-
-                // Update the database
-                update(ref(db), updates)
-                    .then(() => {
-                        // Redirect after successful update
-                        window.location.href = 'manajemenTask.html';
-                    })
-                    .catch((error) => {
-                        console.log(error.message);
-                    });
-            });
+            console.log('Task ID not found in URL parameters');
         }
     } else {
-        console.log('not loaded');
+        console.log('Form not loaded');
     }
 });
