@@ -8,10 +8,14 @@ import { signInWithPopup, signInWithRedirect,getRedirectResult, GoogleAuthProvid
 
 
 const firebaseConfig = {
-    databaseURL:"https://manajemen-tugas-kuliah-f0645-default-rtdb.asia-southeast1.firebasedatabase.app/",
-    apiKey: "AIzaSyDnp3-c04_Hto4YImjdLl_pnZBQ_r-btRM",
-    appId: "1:208839786645:web:cb184f000ad012ebfd5b9c",
-    authDomain: "manajemen-tugas-kuliah-f0645.firebaseapp.com",
+    
+    apiKey: "AIzaSyCZrmaOteLfgQe3Z7PHq4PAjOE_Y49DmMw",
+  authDomain: "sistem-manajemen-tugas-k-4c462.firebaseapp.com",
+  projectId: "sistem-manajemen-tugas-k-4c462",
+  storageBucket: "sistem-manajemen-tugas-k-4c462.appspot.com",
+  messagingSenderId: "321281160990",
+  appId: "1:321281160990:web:38e5bd1f7f823aff8f7b0f",
+  databaseURL:"https://sistem-manajemen-tugas-k-4c462-default-rtdb.asia-southeast1.firebasedatabase.app/"
 };
 const app = initializeApp(firebaseConfig);
 
@@ -36,6 +40,13 @@ document.addEventListener("DOMContentLoaded", function () {
                 // User is authenticated
                 console.log('User is logged in:', user.uid);
                 document.getElementById('username').textContent = "Hello, \n" + user.displayName;
+                const logoutButton = document.createElement('button');
+                logoutButton.textContent = 'Logout';
+                logoutButton.id = 'btn-logout';
+                const navbar=document.getElementById('logout-container')
+                navbar.appendChild(logoutButton)
+
+                
             } else {
                 // User is not authenticated
                 console.log('User is not logged in yet');
@@ -46,6 +57,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             }
         });
+    }
+    if(document.getElementById('btn-logout')){
+        document.getElementById('btn-logout').addEventListener('click',logOut)
     }
 
     const loginButton = document.getElementById('loginButton');
@@ -119,8 +133,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
 function logOut(){
     const auth = getAuth();
+    console.log('logout')
+
     signOut(auth).then(()=>{
         window.location.href='index.html'
+        console.log('logout')
     }).catch((error)=>{
         console.log(error.message)
     });
@@ -173,22 +190,37 @@ function getTask() {
 
         onValue(refx, (snapshot) => {
             const data = snapshot.val();
-
+            let dataToBeSort=[];
             // Clear existing tables
             const leftTableContainer = document.getElementById('left-table');
             const rightTableContainer = document.getElementById('right-table');
             leftTableContainer.innerHTML = '';
             rightTableContainer.innerHTML = '';
 
-            for (const taskData in data) {
-                if (new Date(data[taskData].deadline) < new Date()) {
-                    console.log(new Date(data[taskData].deadline) + '  < ' + new Date());
-                    lateTask.push(data[taskData]);
-                } else {
-                    console.log(new Date(data[taskData].deadline) + '  > ' + new Date());
-                    task.push(data[taskData]);
-                }
+            // for (const taskData in data) {
+            //     if (new Date(data[taskData].deadline) < new Date()) {
+            //         console.log(new Date(data[taskData].deadline) + '  < ' + new Date());
+            //         lateTask.push(data[taskData]);
+            //     } else {
+            //         console.log(new Date(data[taskData].deadline) + '  > ' + new Date());
+            //         task.push(data[taskData]);
+            //     }
+            // }
+
+            for (const taskData in data){
+                dataToBeSort.push(data[taskData])
             }
+            dataToBeSort.sort(compareDate);
+
+            dataToBeSort.forEach((data)=>{
+                if(new Date (data.deadline)<new Date()){
+                    lateTask.push(data)
+                }else{
+                    task.push(data)
+                }
+            })
+
+
 
             const leftTable = createTable(task);
             const rightTable = createTable(lateTask);
@@ -198,6 +230,18 @@ function getTask() {
         });
     } else {
         console.log('user not found');
+    }
+}
+
+function compareDate(a,b){
+    if(new Date(a.deadline)==null){
+        return new Date(a.deadline)-new Date(b.deadline)
+    }
+    else if(new Date(b.deadline==null)){
+        return new Date(a.deadline)-new Date(b.deadline)
+    }
+    else{
+        return new Date(b.deadline)-new Date(a.deadline)
     }
 }
 
@@ -383,12 +427,14 @@ export function registerUsingEmailAndPassword(email,password){
     createUserWithEmailAndPassword(auth, email,password)
     .then((userCredential)=>{
         const user = userCredential.user;
-        window.location.href = 'login.html';
+        window.location.href='login.html'
     })
     .catch((error)=>{
         const errorCode=error.code;
         const errorMessage=error.message;
         console.log(errorMessage);
+        console.log(errorCode);
+
     })
 }
 
